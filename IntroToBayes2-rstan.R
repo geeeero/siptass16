@@ -30,13 +30,18 @@ parameters {
   real beta1;
   real beta2;
 }
+transformed parameters {
+  real<lower=0> sigma;
+  sigma=sqrt(1/tau);
+}
 model {
   tau ~ gamma(1e-3,1e-3);
   beta1 ~ normal(0,1e2);
   beta2 ~ normal(0,1e2);
-  for(i in 1:N) {
-    y[i] ~ normal(beta1 + beta2*x[i], sqrt(1/tau));
-  }
+  //for(i in 1:N) {
+  //  y[i] ~ normal(beta1 + beta2*x[i], sigma);
+  //}
+  y ~ normal(beta1 + beta2*x, sigma);
 }"
 
 data = list()
@@ -48,28 +53,38 @@ data$y = 3 + 5*data$x + rnorm(data$N,sd=1/sqrt(100))
 #inits <- list(beta1=100, beta2=100, tau=1e4)
 
 fit_0 = stan(model_code=model_0, data=data, iter=1000, chains=4)
+fit_0 = stan(model_code=model_0, data=data, iter=1000, chains=4, thin=20)
 print(fit_0)
 plot(fit_0)
 
-samples_0 = extract(fit_0, c("tau", "beta1", "beta2"))
+samples_0 = extract(fit_0, c("sigma", "beta1", "beta2"))
 
 # burn-in is taken out automatically,
 # is there an option to leave it in?
-plot(samples_0$tau, type="l")
+plot(samples_0$sigma, type="l")
 plot(samples_0$beta1, type="l")
 plot(samples_0$beta2, type="l")
-traceplot(fit_0, pars = c("beta1", "beta2", "tau"), inc_warmup = TRUE, nrow = 3)
+traceplot(fit_0, pars = c("beta1", "beta2", "sigma"), inc_warmup = TRUE, nrow = 3)
+traceplot(fit_0, pars = c("beta1", "beta2", "sigma"), inc_warmup = FALSE, nrow = 3)
 
-densityplot(samples_0$tau)
+# RStan version for this?
+densityplot(samples_0$sigma)
 densityplot(samples_0$beta1)
 densityplot(samples_0$beta2)
 
+densityplot(fit_0, pars = c("beta1", "beta2", "sigma"), ncol = 3)
+
 # thinning?
-#coda::acfplot(as.mcmc(samples_0), aspect="fill", lag.max=100, thin=1)
+samples_1 <- As.mcmc.list(fit_0, pars = c("beta1", "beta2", "sigma"))
+coda::acfplot(samples_1, aspect="fill", lag.max=100)
+coda::acfplot(samples_1, aspect="fill", lag.max=100, thin=10) # error
+
 
 # correlation problem is present
 pairs(samples_0, pch=19, cex=0.1)
+pairs(fit_0, pars = c("beta1", "beta2", "sigma"), las = 1)
 
+# change the model to have a transformed data block
 
 ### MATTHIAS TO GERO: not sure how to do
 #xyplot(samples_0)

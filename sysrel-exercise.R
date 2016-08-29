@@ -68,8 +68,3 @@ bridge <- graph.formula(s -- 2:3 -- 4 -- 5:6 -- 1 -- t, 2 -- 5, 3 -- 6)
 bridge <- setCompTypes(bridge, list("T1"=c(2,3,5,6), "T2"=c(4), "T3"=c(1)))
 
 #
-
-bottomlegend <- theme(legend.position = 'bottom', legend.direction = 'horizontal', legend.title = element_blank())
-rightlegend <- theme(legend.title = element_blank())
-
-#
