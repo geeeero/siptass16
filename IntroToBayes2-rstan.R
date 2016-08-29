@@ -7,20 +7,18 @@ hist(colMeans(x), xlab="", main="mean(x)")
 abline(v=0,col=2)
 hist(apply(x,2,quantile,0.975), xlab="", main="quantile(x,0.975)")
 abline(v=qnorm(0.975),col=2)
+par(mfrow=c(1,1))
 
-###################################################
-### code chunk number 2: IntroToBayes2.Rnw:119-124
-###################################################
 ##load the RSTAN library
 require(rstan)
+# recommended in startup message
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+
 require(lattice) # for densityplot function
 ##set number of digits in output
 options(digits = 3) 
 
-
-###################################################
-### code chunk number 3: IntroToBayes2.Rnw:183-194
-###################################################
 model_0 = "
 data {
   int<lower=0> N;
@@ -41,56 +39,42 @@ model {
   }
 }"
 
-
-###################################################
-### code chunk number 4: IntroToBayes2.Rnw:198-200
-###################################################
 data = list()
 data$N = 50
 data$x = rnorm(data$N)+30
 data$y = 3 + 5*data$x + rnorm(data$N,sd=1/sqrt(100))
 
-###################################################
-### code chunk number 5: IntroToBayes2.Rnw:207-208
-###################################################
 # not needed for RSTAN?
 #inits <- list(beta1=100, beta2=100, tau=1e4)
 
-
-###################################################
-### code chunk number 6: IntroToBayes2.Rnw:212-215
-###################################################
 fit_0 = stan(model_code=model_0, data=data, iter=1000, chains=4)
-
 print(fit_0)
 plot(fit_0)
 
-###################################################
-### code chunk number 7: IntroToBayes2.Rnw:219-221
-###################################################
 samples_0 = extract(fit_0, c("tau", "beta1", "beta2"))
 
-###################################################
-### code chunk number 8: IntroToBayes2.Rnw:227-229
-###################################################
+# burn-in is taken out automatically,
+# is there an option to leave it in?
 plot(samples_0$tau, type="l")
 plot(samples_0$beta1, type="l")
 plot(samples_0$beta2, type="l")
-pairs(samples_0)
+traceplot(fit_0, pars = c("beta1", "beta2", "tau"), inc_warmup = TRUE, nrow = 3)
 
-###################################################
-### code chunk number 9: IntroToBayes2.Rnw:234-235
-###################################################
-### MATTHIAS TO GERO: not sure how to do
-# xyplot(samples)
-
-
-###################################################
-### code chunk number 10: IntroToBayes2.Rnw:240-241
-###################################################
 densityplot(samples_0$tau)
 densityplot(samples_0$beta1)
 densityplot(samples_0$beta2)
+
+# thinning?
+#coda::acfplot(as.mcmc(samples_0), aspect="fill", lag.max=100, thin=1)
+
+# correlation problem is present
+pairs(samples_0, pch=19, cex=0.1)
+
+
+### MATTHIAS TO GERO: not sure how to do
+#xyplot(samples_0)
+
+
 
 #### MATTHIAS TO GERO: STOPPED CONVERSION HERE!!! ####
 quit()
