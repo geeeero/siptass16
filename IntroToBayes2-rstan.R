@@ -1,13 +1,6 @@
 ###################################################
-### code chunk number 1: IntroToBayes2.Rnw:84-90
+# code for RStan exercise ISIPTA summer school 2016
 ###################################################
-x = matrix(rnorm(1e5),nrow=100)
-par(mfrow=c(1,2))
-hist(colMeans(x), xlab="", main="mean(x)")
-abline(v=0,col=2)
-hist(apply(x,2,quantile,0.975), xlab="", main="quantile(x,0.975)")
-abline(v=qnorm(0.975),col=2)
-par(mfrow=c(1,1))
 
 ##load the RSTAN library
 require(rstan)
@@ -19,7 +12,7 @@ require(lattice) # for densityplot function
 ##set number of digits in output
 options(digits = 3) 
 
-model_0 = "
+model0 <- "
 data {
   int<lower=0> N;
   vector[N] x;
@@ -44,51 +37,43 @@ model {
   y ~ normal(beta1 + beta2*x, sigma);
 }"
 
-data = list()
-data$N = 50
-data$x = rnorm(data$N)+30
-data$y = 3 + 5*data$x + rnorm(data$N,sd=1/sqrt(100))
+data <- list()
+data$N <- 50
+data$x <- rnorm(data$N)+30
+data$y <- 3 + 5*data$x + rnorm(data$N,sd=1/10)
 
-# not needed for RSTAN?
-#inits <- list(beta1=100, beta2=100, tau=1e4)
+fit0 <- stan(model_code=model0, data=data, iter=1000, chains=4)
+fit0a <- stan(model_code=model0, data=data, iter=1000, chains=4, thin=20)
+plot(fit0)
+print(fit0)
+print(fit0a)
 
-fit_0 = stan(model_code=model_0, data=data, iter=1000, chains=4)
-fit_0 = stan(model_code=model_0, data=data, iter=1000, chains=4, thin=20)
-print(fit_0)
-plot(fit_0)
+samples0 = extract(fit0, c("beta1", "beta2", "sigma"))
+plot(samples0$sigma, type="l")
+plot(samples0$beta1, type="l")
+plot(samples0$beta2, type="l")
 
-samples_0 = extract(fit_0, c("sigma", "beta1", "beta2"))
+stan_trace(fit0, pars = c("beta1", "beta2", "sigma"), inc_warmup = TRUE, nrow = 3)
+stan_trace(fit0, pars = c("beta1", "beta2", "sigma"), inc_warmup = FALSE, nrow = 3)
 
-# burn-in is taken out automatically,
-# is there an option to leave it in?
-plot(samples_0$sigma, type="l")
-plot(samples_0$beta1, type="l")
-plot(samples_0$beta2, type="l")
-traceplot(fit_0, pars = c("beta1", "beta2", "sigma"), inc_warmup = TRUE, nrow = 3)
-traceplot(fit_0, pars = c("beta1", "beta2", "sigma"), inc_warmup = FALSE, nrow = 3)
+#densityplot(samples0$beta1)
+#densityplot(samples0$beta2)
+#densityplot(samples0$sigma)
+stan_dens(fit0, pars = c("beta1", "beta2", "sigma"), inc_warmup = FALSE, ncol = 3)
+stan_dens(fit0, pars = c("beta1", "beta2", "sigma"), inc_warmup = TRUE, ncol = 3)
 
-# RStan version for this?
-densityplot(samples_0$sigma)
-densityplot(samples_0$beta1)
-densityplot(samples_0$beta2)
-
-densityplot(fit_0, pars = c("beta1", "beta2", "sigma"), ncol = 3)
-
-# thinning?
-samples_1 <- As.mcmc.list(fit_0, pars = c("beta1", "beta2", "sigma"))
-coda::acfplot(samples_1, aspect="fill", lag.max=100)
-coda::acfplot(samples_1, aspect="fill", lag.max=100, thin=10) # error
-
+# autocorrelation plot to look at thinning
+stan_ac(fit0, pars = c("beta1", "beta2", "sigma"), ncol = 3)
+samples1 <- As.mcmc.list(fit_0, pars = c("beta1", "beta2", "sigma"))
+coda::acfplot(samples1, aspect="fill", lag.max=100)
 
 # correlation problem is present
-pairs(samples_0, pch=19, cex=0.1)
-pairs(fit_0, pars = c("beta1", "beta2", "sigma"), las = 1)
+pairs(samples0, pch=19, cex=0.1)
+pairs(fit0, pars = c("beta1", "beta2", "sigma"))
+stan_scat(fit0, pars = c("beta1", "beta2"))
+stan_scat(fit0, pars = c("beta1", "sigma"))
 
 # change the model to have a transformed data block
-
-### MATTHIAS TO GERO: not sure how to do
-#xyplot(samples_0)
-
 
 
 #### MATTHIAS TO GERO: STOPPED CONVERSION HERE!!! ####
