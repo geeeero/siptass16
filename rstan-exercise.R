@@ -82,7 +82,7 @@ pdf("trace1.pdf", width=8, height=5)
 stan_trace(fit1, pars = c("beta1"), inc_warmup = FALSE)
 dev.off()
 
-pdf("acf1.pdf", width=8, height=5)
+pdf("acf1.pdf", width=4, height=2.5)
 stan_ac(fit1, pars = c("beta1"))
 dev.off()
 
