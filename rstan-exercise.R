@@ -40,7 +40,7 @@ model {
 data <- list()
 data$N <- 50
 data$x <- rnorm(data$N)+30
-data$y <- 3 + 5*data$x + rnorm(data$N,sd=1/10)
+data$y <- 3 + 5*data$x + rnorm(data$N, sd=1/10)
 
 fit1 <- stan(model_code=model1, data=data, iter=1000, chains=4)
 fit1a <- stan(model_code=model1, data=data, iter=1000, chains=4, thin=20)
@@ -125,5 +125,25 @@ stan_trace(fit2, pars = c("beta1", "beta2", "sigma"), inc_warmup = FALSE, nrow =
 stan_dens(fit2, pars = c("beta1", "beta2", "sigma"), inc_warmup = FALSE, ncol = 3)
 stan_ac(fit2, pars = c("beta1", "beta2", "sigma"), ncol = 3)    # much better now!
 pairs(fit2, pars = c("beta1", "beta1c", "beta2"))               # much better now!
+
+#
+
+model0 <- "
+data {
+  int<lower=0> n;
+  int<lower=0> x;
+}
+parameters {
+  real<lower=0,upper=1> theta;
+}
+model {
+  theta ~ beta(2,2);
+  x ~ binomial(n, theta);
+}
+"
+fit0 <- stan(model_code=model0, data=list(n=10, x=5), iter=1000, chains=4)
+plot(fit0)
+print(fit0)
+
 
 #
