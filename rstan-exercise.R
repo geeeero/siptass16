@@ -3,12 +3,12 @@
 ###################################################
 
 ##load the RSTAN library
-require(rstan)
+library(rstan)
 # recommended in startup message
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
-require(lattice) # for densityplot function
+#require(lattice) # for densityplot function
 ##set number of digits in output
 options(digits = 3) 
 
