@@ -7,8 +7,12 @@
 ## Ullrika Sahlin 2016
 ###################################################################
 
+setwd("./ullrika-thursday")
 require('rstan')
-require('shinystan')
+# recommended in startup message
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+#require('shinystan')
 ###########################################################
 ## Load codes and some functions
 source('stan_hazardassessment.R')
@@ -22,16 +26,15 @@ ssd_data <- generate_data(mu = 2,sigma = 1,K = 20,s_sizes=c(1:3),seed = 1975)
 ## Extract data to learn the SSD based on estimates of toxicity and
 ## information on study specific uncertainty in these estimates
 ## Include hyper parameters for priors
-p = 0.05 #is the largest fraction species we allow to be affected by the substance
+p = 0.05 # is the largest fraction species we allow to be affected by the substance
 ## based on p we derive lambda which is the pth percentile of the normal distribution (which we use for the SSD)
-dat = list(N=sum(ssd_data$s),K=ssd_data$K,y=unlist(ssd_data$y),s=ssd_data$s,
-             sigma_y=unlist(ssd_data$sigma_y),#toxicity data
-             mean_mu = -5, sig_mu = 10,upper_sigma = 10,#hyper priors
-              w = unlist(sapply(ssd_data$s,FUN=function(x) rep(1/x,x))),
-             lambda=qnorm(p))#quantile for calculating loss function
+dat = list(N=sum(ssd_data$s), K=ssd_data$K, y=unlist(ssd_data$y), s=ssd_data$s,
+           sigma_y=unlist(ssd_data$sigma_y), # toxicity data
+           mean_mu = -5, sig_mu = 10, upper_sigma = 10, # hyper priors
+           w = unlist(sapply(ssd_data$s, FUN=function(x) rep(1/x,x))),
+           lambda=qnorm(p)) #quantile for calculating loss function
 
-model = stan(model_name="model", model_code = code_ssd, data=dat,
-               iter = 5000, chains = 4, verbose = FALSE)
+model = stan(model_name="model", model_code = code_ssd, data=dat, iter = 5000, chains = 4, verbose = FALSE)
 
 print(model)
 traceplot(model,c('mu','sigma'))

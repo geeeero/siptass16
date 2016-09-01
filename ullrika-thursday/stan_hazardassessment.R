@@ -29,7 +29,7 @@ data {
 int<lower=0> N; // # observations
 int<lower=0> K; // # of groups
 vector[N] y; // observations
-int s[K]; // group sizes
+int s[K]; // group sizes: must sum to N
 vector[N] sigma_y; // known study specific uncertainty
 }
 parameters {
@@ -68,53 +68,58 @@ pos <- pos + 1;
 code_ssd = "
 functions { 
 real calc_LHCp(real lambda1, real mu1, real sigma1){
-return mu1+lambda1*sigma1; // function to calculate loss
-}
+ return mu1+lambda1*sigma1; // function to calculate loss
+ }
 }
 
 data {
-int<lower=0> N; // # observations
-int<lower=0> K; // # of groups
-vector[N] y; // observations
-int s[K]; // group sizes
+int<lower=0> N;    // # observations
+int<lower=0> K;    // # of groups
+vector[N] y;       // observations
+int s[K];          // group sizes: must sum to N
 vector[N] sigma_y; // known group specific uncertainty
 
 // hyper parameters for the priors
-real mean_mu;//mean of mu
-real<lower=0> sig_mu;// standard deviation of mu
-real<lower=0> upper_sigma;// right value of the uniform for the sigma
-vector[N] w;//weights on each study
+real mean_mu;              // mean of mu
+real<lower=0> sig_mu;      // standard deviation of mu
+real<lower=0> upper_sigma; // right value of the uniform for the sigma
+vector[N] w;               // weights on each study
+
 // info to hazard assessment
 real lambda; //quantile in the SSD - stan does not have a function to calculate this from p
 }
 
 transformed data {
-vector[N] sigma_y_w;//weighted sigma_y
+vector[N] sigma_y_w; // weighted sigma_y
 for(i in 1:N) 
-sigma_y_w[i] = sigma_y[i] / w[i];
+ sigma_y_w[i] = sigma_y[i] / w[i];
 }
 
 parameters {
 real mu;
 real<lower=0> sigma;
-vector[K] alpha;
+vector[K-1] alphaK1;
 }
 
-//transformed parameters {
-//vector[K] t;
-//t = mu + alpha; // we reparametrise from t to alpha to reduce correlated parameters
-//}
+transformed parameters {
+real alphaK;
+vector[K] alpha;
+alphaK = -sum(alphaK1);
+//alpha = append_row(alphaK1, alphaK);
+for (k in 1:K-1)
+ alpha[k] <- alphaK1[k];
+alpha[K] <- alphaK;
+}
 
 model {
 int pos;
 mu ~ uniform(mean_mu,sig_mu);
-sigma ~ uniform(0,upper_sigma);
-
-pos <- 1;
+sigma ~ normal(0,upper_sigma);
+pos = 1;
 for (k in 1:K) {
-alpha[k] ~ normal(0,sigma);
-segment(y, pos, s[k]) ~ normal(mu + alpha[k],segment(sigma_y_w, pos, s[k]));
-pos <- pos + s[k];
+ alpha[k] ~ normal(0,sigma);
+ segment(y, pos, s[k]) ~ normal(mu + alpha[k], segment(sigma_y_w, pos, s[k]));
+ pos = pos + s[k];
 }
 }
 
@@ -122,17 +127,14 @@ generated quantities {
 real y_rep[N];
 real LHCp;
 int pos;
-pos <- 1;
+pos = 1;
 for (k in 1:K) {
-for (r in 1:s[k]) {
-y_rep[pos] <- normal_rng(mu + alpha[k],sigma_y_w[pos]);
-pos <- pos + 1;
-}
-}
-LHCp <- calc_LHCp(lambda,mu,sigma);
+ for (r in 1:s[k]) {
+  y_rep[pos] = normal_rng(mu + alpha[k], sigma_y_w[pos]);
+  pos = pos + 1;
+ }
 }
 
+LHCp = calc_LHCp(lambda, mu, sigma);
+}
 "
-
-
-

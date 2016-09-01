@@ -10,6 +10,7 @@ cat("\nCXXFLAGS=-O3 -mtune=native -march=native -Wno-unused-variable -Wno-unused
 #install.packages("rstan", type = "source")
 install.packages("lattice")
 install.packages("coda")
+install.packages("shinystan")
 
 # verify your toolchain
 fx <- inline::cxxfunction( signature(x = "integer", y = "numeric" ) , '
